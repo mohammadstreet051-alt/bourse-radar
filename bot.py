@@ -3,31 +3,64 @@ import requests
 from datetime import datetime, timezone, timedelta
 
 # ========================================================
-# اطلاعات ربات و کانال طلا (مربوط به گلد رادار)
+# تنظیمات ربات 
 # ========================================================
 BALE_TOKEN = "471791104:Lp61JTQABDJuiJaGgYdEFSW7qckAtpu9EEk"
-CHANNEL_ID = "@GoldRadar_AI"
+CHAT_ID = "YOUR_PERSONAL_CHAT_ID" # اگر خالی بماند، ربات خودکار آخرین چت را پیدا می‌کند
 
-# آدرس دریافت قیمت انس جهانی و طلا
-API_URL = "https://api.coincap.io/v2/rates/gold" # یا وب‌سرویس‌های رایگان طلا
-# فعلا برای تست ساختار، ساختار پایه را می‌گذاریم
+def send_to_user(text):
+    chat_id = CHAT_ID
+    if chat_id == "YOUR_PERSONAL_CHAT_ID":
+        updates_url = f"https://tapi.bale.ai/bot{BALE_TOKEN}/getUpdates"
+        try:
+            res = requests.get(updates_url, timeout=10).json()
+            if res.get("ok") and res.get("result"):
+                chat_id = res["result"][-1]["message"]["chat"]["id"]
+            else:
+                print("خطا: لطفاً اول به ربات در بله یک پیام بفرستید تا چت باز شود.")
+                return
+        except Exception as e:
+            print("Error getting chat_id:", e)
+            return
 
-def send_to_bale(text):
     url = f"https://tapi.bale.ai/bot{BALE_TOKEN}/sendMessage"
-    payload = {"chat_id": CHANNEL_ID, "text": text}
+    payload = {
+        "chat_id": chat_id,
+        "text": text
+    }
     try:
         requests.post(url, json=payload, timeout=10)
     except Exception as e:
         print("Bale Error:", e)
 
-def get_iran_time():
+def get_iran_datetime():
     utc_now = datetime.now(timezone.utc)
-    return utc_now.astimezone(timezone(timedelta(hours=3, minutes=30)))
+    iran_time = utc_now.astimezone(timezone(timedelta(hours=3, minutes=30)))
+    date_str = iran_time.strftime("%Y/%m/%d")
+    time_str = iran_time.strftime("%H:%M:%S")
+    return date_str, time_str
 
 if __name__ == "__main__":
-    now_ir = get_iran_time()
-    send_to_bale(
-        "🟡 **رادار انس و طلای جهانی (`@GoldRadarAI_bot`) با موفقیت راه‌اندازی شد!**\n"
-        f"⏰ زمان تست سیستم: {now_ir.strftime('%H:%M:%S')}\n"
-        "این کانال کاملاً مجزا از بورس ایران، به صورت خودکار تحولات بازار طلا را رصد خواهد کرد."
+    cur_date, cur_time = get_iran_datetime()
+    
+    # نمونه پیام تستی سیگنال
+    sample_signal_msg = (
+        f"🟡 **[پیام تستی] سیگنال صندوق و سهام طلا (بورس)** 🟡\n"
+        f"━━━━━━━━━━━━━━\n"
+        f"📌 نماد: #عیار (صندوق طلای عیار)\n"
+        f"💵 آخرین قیمت: ۶۴,۲۵۰ ریال (+۴.۸٪)\n\n"
+        f"🎯 علت سیگنال (تست سیستم):\n"
+        f"✅ ورود سنگین پول هوشمند به صندوق طلا\n"
+        f"✅ قدرت خرید بالا و صف خرید پایدار\n\n"
+        f"📊 وضعیت تابلو:\n"
+        f"• قدرت خریدار: ۲.۶ برابر\n"
+        f"• سرانه خرید: ۷۵ میلیون تومان\n"
+        f"• خالص ورود پول: ۱۸ میلیارد تومان\n\n"
+        f"📅 تاریخ: {cur_date}\n"
+        f"⏰ ساعت: {cur_time}\n"
+        f"🤖 @BourseGoldRadar_bot"
     )
+    
+    print("در حال ارسال پیام تستی به بله...")
+    send_to_user(sample_signal_msg)
+    print("ارسال شد!")
